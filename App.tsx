@@ -18,8 +18,8 @@ const INITIAL_TABS: TabData[] = [
     id: 'code',
     label: 'Clean Code 2025',
     icon: 'fas fa-code',
-    contentTitle: 'Modern Clean Code Practices',
-    contentDescription: 'Code is read far more often than it is written. Optimization for readability is optimization for maintainability.'
+    contentTitle: 'Code for Humans, Not Machines',
+    contentDescription: '"Clean code is about empathy." Junior devs write code that works. Senior devs write code that others can maintain, debug, and extend 6 months from now.'
   },
   {
     id: 'system',
@@ -59,50 +59,82 @@ const INITIAL_TASKS: Task[] = [
   // Clean Code Tasks
   {
     id: 'c1',
-    title: 'Function Purity Audit',
-    description: "Review your last PR. Identify any side effects in your utility functions. Refactor to make them pure (deterministic output for same input).",
-    xp: 25,
-    completed: false,
-    tabId: 'code'
-  },
-  {
-    id: 'c2',
-    title: 'Implement Early Returns',
-    description: "Scan for nested if/else blocks. Refactor using guard clauses and early returns to reduce cognitive load and indentation depth.",
+    title: 'Names That Tell Stories',
+    description: "Avoid `data`, `item`, `handle`. Use `userProfile`, `cartItem`, `submitCheckoutForm`. If you need a comment to explain the variable name, rename the variable.",
     xp: 20,
     completed: false,
     tabId: 'code'
   },
   {
+    id: 'c2',
+    title: 'Guard Clauses Over Nesting',
+    description: "Don't nest `if` statements 3 levels deep. Check for failure conditions early and `return`. Keep the 'happy path' at the root indentation level.",
+    xp: 25,
+    completed: false,
+    tabId: 'code'
+  },
+  {
     id: 'c3',
-    title: 'Semantic Naming Review',
-    description: "Rename 3 variables or functions that use generic names (e.g., 'data', 'handler') to something that explicitly describes their intent.",
-    xp: 15,
+    title: 'Accessibility Is Not Optional',
+    description: "Use semantic HTML (`<button>` not `div`). Ensure keyboard navigability. A 1% developer cares about ALL users.",
+    xp: 30,
+    completed: false,
+    tabId: 'code'
+  },
+  {
+    id: 'c4',
+    title: 'Self-Documenting Functions',
+    description: "A function should do ONE thing. If `processUser` validates, saves, and emails, break it into `validateUser`, `saveUser`, `emailUser`.",
+    xp: 20,
+    completed: false,
+    tabId: 'code'
+  },
+  {
+    id: 'c5',
+    title: 'Console Hygiene',
+    description: "Remove your `console.log('here')` before committing. Use `console.error` for catches. Don't ship noise.",
+    xp: 10,
+    completed: false,
+    tabId: 'code'
+  },
+  {
+    id: 'c6',
+    title: 'Component Composition',
+    description: "Avoid massive 'God Components'. Break UI into small, reusable pieces. Use slots or children props for flexibility.",
+    xp: 25,
     completed: false,
     tabId: 'code'
   },
   // System Design Tasks
   {
     id: 's1',
-    title: 'Define API Contracts',
-    description: "Draft the OpenAPI/Swagger spec for a new endpoint before writing a single line of code. Ensure status codes and error payloads are standardized.",
-    xp: 35,
-    completed: false,
-    tabId: 'system'
-  },
-  {
-    id: 's2',
-    title: 'Database Index Optimization',
-    description: "Analyze slow query logs. Identify a query performing a full table scan and propose a compound index to optimize it.",
+    title: 'CAP Theorem Analysis',
+    description: "Analyze your current project's database. Is it CP or AP? Document why that trade-off was made in your engineering notes.",
     xp: 40,
     completed: false,
     tabId: 'system'
   },
   {
+    id: 's2',
+    title: 'Design Idempotency Keys',
+    description: "Draft a plan to make your critical POST endpoints idempotent using request IDs to prevent duplicate processing on network retries.",
+    xp: 35,
+    completed: false,
+    tabId: 'system'
+  },
+  {
     id: 's3',
-    title: 'Draw C4 Model Diagram',
-    description: "Create a Context or Container diagram for your current service to visualize dependencies and data flow.",
+    title: 'Load Balancer Strategy',
+    description: "Review your load balancing strategy (Round Robin, Least Connections, etc.). Determine if 'Sticky Sessions' are creating hot spots.",
     xp: 30,
+    completed: false,
+    tabId: 'system'
+  },
+  {
+    id: 's4',
+    title: 'Database Indexing Plan',
+    description: "Identify slow queries in your logs. Propose specific compound indexes to optimize them without over-indexing write-heavy tables.",
+    xp: 45,
     completed: false,
     tabId: 'system'
   }
@@ -118,21 +150,23 @@ const App: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
 
   const toggleTask = (id: string) => {
-    setTasks(prev => prev.map(task => {
-      if (task.id === id) {
-        const isNowCompleted = !task.completed;
-        
-        // XP Logic: Add if completed, Subtract if unchecked
-        if (isNowCompleted) {
-          setXp(x => x + task.xp);
-        } else {
-          setXp(x => Math.max(0, x - task.xp));
-        }
+    // 1. Find the task to determine current state
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
 
-        return { ...task, completed: isNowCompleted };
-      }
-      return task;
-    }));
+    const isNowCompleted = !task.completed;
+
+    // 2. Update XP immediately based on the toggle action
+    if (isNowCompleted) {
+      setXp(prev => prev + task.xp);
+    } else {
+      setXp(prev => Math.max(0, prev - task.xp));
+    }
+
+    // 3. Update Task state
+    setTasks(prev => prev.map(t => 
+      t.id === id ? { ...t, completed: isNowCompleted } : t
+    ));
   };
 
   const handleGeneratePlan = async () => {
@@ -148,7 +182,7 @@ const App: React.FC = () => {
         description: t.description,
         xp: t.xp,
         completed: false,
-        tabId: activeTab // Add to current tab
+        tabId: activeTab // Crucial: Add generated tasks to the currently Active Tab
       }));
       setTasks(prev => [...prev, ...newTasks]);
     }
